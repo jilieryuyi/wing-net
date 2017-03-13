@@ -20,11 +20,10 @@ class HttpData
     public function __construct($data)
     {
         list($headers, $content) = explode("\r\n\r\n", $data, 2);
+
         $headers = explode("\r\n", $headers);
+        $line1   = array_shift($headers);
 
-
-
-        $line1 = array_shift($headers);
         list($this->method, $resource, $this->http_protocol) = explode(" ", $line1);
 
         foreach ($headers as $header) {
@@ -36,7 +35,6 @@ class HttpData
         $this->host = trim($this->host);
         if (!$this->port)
             $this->port = 80;
-
 
         $arr = parse_url($resource);
         $this->resource = $arr["path"];

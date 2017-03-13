@@ -22,12 +22,21 @@ class Tcp
     protected $ip;
     protected $port;
 
+    /**
+     * 构造函数
+     *
+     * @param string $ip
+     * @param int $port
+     */
     public function __construct($ip = "0.0.0.0", $port = 9998)
     {
         $this->ip   = $ip;
         $this->port = $port;
     }
 
+    /**
+     * 入口api
+     */
     public function start()
     {
         $this->socket = stream_socket_server('tcp://'.$this->ip.':'.$this->port, $errno, $errstr);
@@ -47,7 +56,12 @@ class Tcp
         event_base_loop($base);
     }
 
-    //绑定事件
+    /**
+     * 绑定事件
+     *
+     * @param string $event
+     * @param \Closure|array $callback
+     */
     public function on($event, $callback)
     {
         if (!isset($this->callbacks[$event]))
@@ -55,6 +69,12 @@ class Tcp
         $this->callbacks[$event][] = $callback;
     }
 
+    /**
+     * 执行回调
+     *
+     * @param string $event
+     * @param array $params
+     */
     protected function call($event, array $params = [])
     {
         if (!isset($this->callbacks[$event])) {
@@ -76,13 +96,23 @@ class Tcp
         }
     }
 
+    /**
+     * 析构函数
+     */
     public function __destruct()
     {
         socket_close($this->socket);
     }
 
-
-    public function accept($socket, $flag, $base) {
+    /**
+     * 新的连接进来时的回调函数
+     *
+     * @param resource $socket
+     * @param mixed $flag
+     * @param resource $base
+     */
+    public function accept($socket, $flag, $base)
+    {
         $connection = stream_socket_accept($socket);
         stream_set_blocking($connection, 0);
 
@@ -102,7 +132,11 @@ class Tcp
         $this->index++;
     }
 
-    public function error($buffer, $error, $params) {
+    /**
+     * 错误回调函数
+     */
+    public function error($buffer, $error, $params)
+    {
         event_buffer_disable($buffer, EV_READ | EV_WRITE);
         event_buffer_free($buffer);
 
@@ -113,14 +147,22 @@ class Tcp
         $this->index--;
     }
 
-    public function read($buffer, $params) {
+    /**
+     * 收到消息时的回调函数
+     */
+    public function read($buffer, $params)
+    {
         while ($read = event_buffer_read($buffer, 10240)) {
             var_dump($read);
             $this->call(self::ON_RECEIVE,[$params[0], $buffer, $params[1], $read]);
         }
     }
 
-    public function write($buffer, $params){
+    /**
+     * 发送成功时的回调函数
+     */
+    public function write($buffer, $params)
+    {
         $this->call(self::ON_WRITE,[$params[0], $buffer, $params[1]]);
     }
 }
