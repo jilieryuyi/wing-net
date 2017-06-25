@@ -5,7 +5,7 @@
  * Date: 17/3/13
  * Time: 12:55
  */
-class HttpResponse
+class Response
 {
     protected $method;
     protected $host;
@@ -184,7 +184,7 @@ class HttpResponse
         return explode(",",$this->headers["accept"]);
     }
 
-    public function output()
+    public function output($content)
     {
 
     }

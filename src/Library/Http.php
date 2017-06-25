@@ -5,7 +5,7 @@
  * Date: 17/3/13
  * Time: 11:55
  */
-class Http extends Tcp
+class Http
 {
     const ON_HTTP_RECEIVE = "on_http_msg";
 
