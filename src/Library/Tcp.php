@@ -10,7 +10,6 @@ class Tcp
     protected $socket;
     protected $clients = [];
     protected $buffers = [];
-    protected $index   = 0;
 
     const ON_RECEIVE = "on_read";
     const ON_WRITE   = "on_write";
@@ -101,7 +100,7 @@ class Tcp
      */
     public function __destruct()
     {
-        socket_close($this->socket);
+        fclose($this->socket);
     }
 
     /**
@@ -116,7 +115,7 @@ class Tcp
         $connection = stream_socket_accept($socket);
         stream_set_blocking($connection, 0);
 
-        $buffer = event_buffer_new($connection, [$this, 'read'], [$this, 'write'], [$this, 'error'], [$connection,$this->index]);
+        $buffer = event_buffer_new($connection, [$this, 'read'], [$this, 'write'], [$this, 'error'], $connection);
 
         event_buffer_base_set($buffer, $base);
         event_buffer_timeout_set($buffer, 30, 30);
@@ -124,45 +123,56 @@ class Tcp
         event_buffer_priority_set($buffer, 10);
         event_buffer_enable($buffer, EV_READ | EV_PERSIST);
 
-        $this->clients[$this->index] = $connection;
-        $this->buffers[$this->index] = $buffer;
+        $this->clients[] = $connection;
+        $this->buffers[] = $buffer;
 
-        $this->call(self::ON_CONNECT, [$connection, $buffer, $this->index]);
+        $this->call(self::ON_CONNECT, [$connection, $buffer]);
 
-        $this->index++;
     }
 
     /**
      * 错误回调函数
      */
-    public function error($buffer, $error, $params)
+    public function error($buffer, $error, $client)
     {
         event_buffer_disable($buffer, EV_READ | EV_WRITE);
         event_buffer_free($buffer);
 
-        $this->call(self::ON_ERROR, [$params[0], $buffer, $params[1], $error]);
+        $this->call(self::ON_ERROR, [$client, $buffer, $error]);
 
-        fclose($params[0]);
-        unset($this->clients[$params[1]], $this->buffers[$params[1]]);
-        $this->index--;
+        fclose($client);
+        $index = array_search($client, $this->clients);
+        unset($this->clients[$index], $this->buffers[$index]);
+    }
+
+    public function free($client)
+    {
+        $index = array_search($client, $this->clients);
+
+        event_buffer_disable($this->buffers[$index], EV_READ | EV_WRITE);
+        event_buffer_free($this->buffers[$index]);
+        fclose($client);
+        unset($this->clients[$index], $this->buffers[$index]);
     }
 
     /**
      * 收到消息时的回调函数
      */
-    public function read($buffer, $params)
+    public function read($buffer, $client)
     {
         while ($read = event_buffer_read($buffer, 10240)) {
             var_dump($read);
-            $this->call(self::ON_RECEIVE,[$params[0], $buffer, $params[1], $read]);
+            $this->call(self::ON_RECEIVE,[$client, $buffer, $read]);
         }
     }
 
     /**
      * 发送成功时的回调函数
      */
-    public function write($buffer, $params)
+    public function write($buffer, $client)
     {
-        $this->call(self::ON_WRITE,[$params[0], $buffer, $params[1]]);
+        $this->call(self::ON_WRITE,[$client, $buffer]);
     }
+
+
 }

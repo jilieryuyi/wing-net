@@ -20,18 +20,14 @@ class Http extends Tcp
     }
 
     //http协议在发送后要关闭连接
-    public function onWrite($client, $buffer, $id)
+    public function onWrite($client, $buffer)
     {
-        fclose($client);
-        event_buffer_free($buffer);
-        unset($this->clients[$id]);
-        unset($this->buffers[$id]);
-        $this->index--;
+        $this->free($client);
     }
 
-    public function onReceive($client, $buffer, $id, $data)
+    public function onReceive($client, $buffer, $data)
     {
-        $this->call(self::ON_HTTP_RECEIVE, [$client, $buffer, $id, new HttpData($data), $data]);
+        $this->call(self::ON_HTTP_RECEIVE, [$client, new HttpResponse($buffer, $data)]);
     }
 
     public function send($buffer, $data)

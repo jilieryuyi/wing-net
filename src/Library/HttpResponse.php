@@ -5,7 +5,7 @@
  * Date: 17/3/13
  * Time: 12:55
  */
-class HttpData
+class HttpResponse
 {
     protected $method;
     protected $host;
@@ -17,8 +17,11 @@ class HttpData
     protected $post    = [];
     protected $headers = [];
 
-    public function __construct($data)
+    protected $buffer;
+
+    public function __construct($buffer, $data)
     {
+        $this->buffer = $buffer;
         list($headers, $content) = explode("\r\n\r\n", $data, 2);
 
         $headers = explode("\r\n", $headers);
@@ -179,5 +182,10 @@ class HttpData
         if (!isset($this->headers["accept"]))
             return null;
         return explode(",",$this->headers["accept"]);
+    }
+
+    public function output()
+    {
+
     }
 }
