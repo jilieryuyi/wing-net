@@ -10,6 +10,9 @@ class Agent
     private $protocol;
     private $ip;
     private $port;
+
+    private $agent;
+
     /**
      * construct
      *
@@ -22,7 +25,20 @@ class Agent
     public function __construct($conn)
     {
         $this->parseConn($conn);
+        $this->agent = new Tcp($this->ip, $this->port);
+
+        $this->agent->on(Tcp::ON_RECEIVE, [$this, "onMessage"]);
+		$this->agent->on(Tcp::ON_WRITE, [$this, "onWrite"]);
+		$this->agent->on(Tcp::ON_CONNECT, [$this, "onConnect"]);
+		$this->agent->on(Tcp::ON_ERROR, [$this, "onError"]);
+
+
     }
+
+    public function start()
+	{
+		$this->agent->start();
+	}
 
     private function parseConn($conn)
     {
@@ -35,7 +51,26 @@ class Agent
 
     public function onMessage($callback)
     {
-        $response = new Response();
-        call_user_func($callback,[$response]);
+
     }
+
+    public function onClose()
+	{
+
+	}
+
+	public function onConnect()
+	{
+
+	}
+
+	public function onWrite()
+	{
+
+	}
+
+	public function onError()
+	{
+
+	}
 }
